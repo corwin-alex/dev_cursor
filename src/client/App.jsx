@@ -1,5 +1,25 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faArrowLeft,
+  faBarsProgress,
+  faBookOpen,
+  faFloppyDisk,
+  faFolderOpen,
+  faGraduationCap,
+  faLayerGroup,
+  faLock,
+  faNoteSticky,
+  faPen,
+  faPlus,
+  faRightFromBracket,
+  faRightToBracket,
+  faTrash,
+  faUser,
+  faUserPlus,
+  faXmark
+} from "@fortawesome/free-solid-svg-icons";
 
 async function api(path, options = {}, token = "") {
   const response = await fetch(path, {
@@ -33,11 +53,21 @@ function Layout({ children, userEmail, onLogout }) {
   return (
     <div className="app">
       <header>
-        <h1>Сам себе трекер прогресса</h1>
+        <h1 className="icon-text">
+          <FontAwesomeIcon icon={faGraduationCap} />
+          Сам себе трекер прогресса
+        </h1>
         <div className="header-actions">
-          <Link to="/">Каталог курсов</Link>
-          <span className="user-email">{userEmail}</span>
-          <button type="button" onClick={onLogout}>
+          <Link to="/" className="icon-text">
+            <FontAwesomeIcon icon={faLayerGroup} />
+            Каталог курсов
+          </Link>
+          <span className="user-email icon-text">
+            <FontAwesomeIcon icon={faUser} />
+            {userEmail}
+          </span>
+          <button type="button" onClick={onLogout} className="icon-text">
+            <FontAwesomeIcon icon={faRightFromBracket} />
             Выйти
           </button>
         </div>
@@ -70,7 +100,10 @@ function AuthPage({ onAuth }) {
   return (
     <div className="auth-wrap">
       <section className="panel auth-panel">
-        <h2>{mode === "login" ? "Вход" : "Регистрация"}</h2>
+        <h2 className="icon-text">
+          <FontAwesomeIcon icon={mode === "login" ? faLock : faUserPlus} />
+          {mode === "login" ? "Вход" : "Регистрация"}
+        </h2>
         <form onSubmit={onSubmit} className="auth-form">
           <label className="field-label">
             Email
@@ -81,7 +114,10 @@ function AuthPage({ onAuth }) {
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </label>
           {error && <p className="error-text">{error}</p>}
-          <button type="submit">{mode === "login" ? "Войти" : "Создать аккаунт"}</button>
+          <button type="submit" className="icon-text">
+            <FontAwesomeIcon icon={mode === "login" ? faRightToBracket : faUserPlus} />
+            {mode === "login" ? "Войти" : "Создать аккаунт"}
+          </button>
         </form>
         <button type="button" className="text-button" onClick={() => setMode(mode === "login" ? "register" : "login")}>
           {mode === "login" ? "Нет аккаунта? Зарегистрироваться" : "Уже есть аккаунт? Войти"}
@@ -129,7 +165,10 @@ function CatalogPage({ token, user, onLogout }) {
   return (
     <Layout userEmail={user.email} onLogout={onLogout}>
       <section className="panel">
-        <h2>Новый курс</h2>
+        <h2 className="icon-text">
+          <FontAwesomeIcon icon={faPlus} />
+          Новый курс
+        </h2>
         <form onSubmit={onSubmit} className="form-grid">
           <label className="field-label span-two">
             Название курса
@@ -139,12 +178,18 @@ function CatalogPage({ token, user, onLogout }) {
             Краткое описание
             <input value={description} onChange={(e) => setDescription(e.target.value)} />
           </label>
-          <button type="submit">Добавить курс</button>
+          <button type="submit" className="icon-text">
+            <FontAwesomeIcon icon={faPlus} />
+            Добавить курс
+          </button>
         </form>
       </section>
 
       <section className="panel">
-        <h2>Каталог</h2>
+        <h2 className="icon-text">
+          <FontAwesomeIcon icon={faFolderOpen} />
+          Каталог
+        </h2>
         {!catalog.length && <p>Пока пусто. Добавьте первый курс.</p>}
         {catalog.map((course) => (
           <article key={course.id} className="card">
@@ -154,8 +199,12 @@ function CatalogPage({ token, user, onLogout }) {
               <small>Модулей: {course.modules.length}</small>
             </div>
             <div className="actions">
-              <Link to={`/courses/${course.id}`}>Открыть</Link>
-              <button type="button" onClick={() => removeCourse(course.id)}>
+              <Link to={`/courses/${course.id}`} className="icon-text">
+                <FontAwesomeIcon icon={faBookOpen} />
+                Открыть
+              </Link>
+              <button type="button" className="icon-text" onClick={() => removeCourse(course.id)}>
+                <FontAwesomeIcon icon={faTrash} />
                 Удалить
               </button>
             </div>
@@ -241,7 +290,8 @@ function CoursePage({ token, user, onLogout }) {
       <Layout userEmail={user.email} onLogout={onLogout}>
         <section className="panel">
           <p>Курс не найден.</p>
-          <button type="button" onClick={() => navigate("/")}>
+          <button type="button" className="icon-text" onClick={() => navigate("/")}>
+            <FontAwesomeIcon icon={faArrowLeft} />
             Назад
           </button>
         </section>
@@ -256,6 +306,7 @@ function CoursePage({ token, user, onLogout }) {
         <p>{course.description || "Без описания"}</p>
         <NotesEditor
           title="Заметки по курсу"
+          titleIcon={faNoteSticky}
           notes={course.notes || []}
           isSaving={Boolean(saving[`course-${course.id}`])}
           onSave={(notes) => updateCourseNotes(course.id, notes)}
@@ -265,7 +316,10 @@ function CoursePage({ token, user, onLogout }) {
             Название модуля
             <input value={moduleTitle} onChange={(e) => setModuleTitle(e.target.value)} />
           </label>
-          <button type="submit">Добавить модуль</button>
+          <button type="submit" className="icon-text">
+            <FontAwesomeIcon icon={faPlus} />
+            Добавить модуль
+          </button>
         </form>
       </section>
 
@@ -273,13 +327,15 @@ function CoursePage({ token, user, onLogout }) {
         <section key={module.id} className="panel">
           <div className="module-head">
             <h3>{module.title}</h3>
-            <button type="button" onClick={() => removeModule(module.id)}>
+            <button type="button" className="icon-text" onClick={() => removeModule(module.id)}>
+              <FontAwesomeIcon icon={faTrash} />
               Удалить модуль
             </button>
           </div>
 
           <NotesEditor
             title="Заметки по модулю"
+            titleIcon={faNoteSticky}
             notes={module.notes || []}
             isSaving={Boolean(saving[`module-${module.id}`])}
             onSave={(notes) => updateModuleNotes(module.id, notes)}
@@ -293,7 +349,8 @@ function CoursePage({ token, user, onLogout }) {
                 onChange={(e) => setLessonTitles((prev) => ({ ...prev, [module.id]: e.target.value }))}
               />
             </label>
-            <button type="button" onClick={() => addLesson(module.id)}>
+            <button type="button" className="icon-text" onClick={() => addLesson(module.id)}>
+              <FontAwesomeIcon icon={faPlus} />
               Добавить урок
             </button>
           </div>
@@ -339,7 +396,10 @@ function LessonCard({ lesson, onSave, onDelete, isSaving }) {
       {!isEditing && (
         <div className="lesson-preview">
           <h4>{form.title}</h4>
-          <p className="progress-badge">Прогресс: {getProgressLabel(form.progress)}</p>
+          <p className="progress-badge icon-text">
+            <FontAwesomeIcon icon={faBarsProgress} />
+            Прогресс: {getProgressLabel(form.progress)}
+          </p>
           <NotesList notes={form.notes || []} emptyText="Нет заметок по уроку." />
         </div>
       )}
@@ -365,6 +425,7 @@ function LessonCard({ lesson, onSave, onDelete, isSaving }) {
           </div>
           <NotesEditor
             title="Заметки по уроку"
+            titleIcon={faNoteSticky}
             notes={form.notes || []}
             isSaving={false}
             onSave={(notes) => setForm((prev) => ({ ...prev, notes }))}
@@ -374,21 +435,25 @@ function LessonCard({ lesson, onSave, onDelete, isSaving }) {
       )}
       <div className="actions">
         {!isEditing && (
-          <button type="button" onClick={() => setIsEditing(true)}>
+          <button type="button" className="icon-text" onClick={() => setIsEditing(true)}>
+            <FontAwesomeIcon icon={faPen} />
             Редактировать
           </button>
         )}
         {isEditing && (
           <>
-            <button type="button" onClick={saveChanges} disabled={isSaving}>
+            <button type="button" className="icon-text" onClick={saveChanges} disabled={isSaving}>
+              <FontAwesomeIcon icon={faFloppyDisk} />
               {isSaving ? "Сохранение…" : "Сохранить"}
             </button>
-            <button type="button" onClick={cancelChanges}>
+            <button type="button" className="icon-text" onClick={cancelChanges}>
+              <FontAwesomeIcon icon={faXmark} />
               Отмена
             </button>
           </>
         )}
-        <button type="button" onClick={() => onDelete(lesson.id)}>
+        <button type="button" className="icon-text" onClick={() => onDelete(lesson.id)}>
+          <FontAwesomeIcon icon={faTrash} />
           Удалить урок
         </button>
       </div>
@@ -407,7 +472,7 @@ function NotesList({ notes, emptyText }) {
   );
 }
 
-function NotesEditor({ title, notes, onSave, isSaving, localOnly = false }) {
+function NotesEditor({ title, titleIcon, notes, onSave, isSaving, localOnly = false }) {
   const [draft, setDraft] = useState(notes);
   const [input, setInput] = useState("");
 
@@ -439,17 +504,28 @@ function NotesEditor({ title, notes, onSave, isSaving, localOnly = false }) {
 
   return (
     <div className="notes-editor">
-      <label className="field-label">{title}</label>
+      <label className={`field-label${titleIcon ? " icon-text" : ""}`}>
+        {titleIcon ? <FontAwesomeIcon icon={titleIcon} /> : null}
+        {title}
+      </label>
       <div className="notes-input-row">
         <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Новая заметка" />
-        <button type="button" onClick={addNote} disabled={isSaving}>
+        <button type="button" className="icon-text" onClick={addNote} disabled={isSaving}>
+          <FontAwesomeIcon icon={faPlus} />
           Добавить
         </button>
       </div>
       <NotesList notes={draft} emptyText="Пока нет заметок." />
       <div className="actions">
         {draft.map((note, index) => (
-          <button key={`${note}-${index}`} type="button" className="secondary" onClick={() => removeNote(index)} disabled={isSaving}>
+          <button
+            key={`${note}-${index}`}
+            type="button"
+            className="secondary icon-text"
+            onClick={() => removeNote(index)}
+            disabled={isSaving}
+          >
+            <FontAwesomeIcon icon={faTrash} />
             Удалить: {note.slice(0, 20)}
           </button>
         ))}
