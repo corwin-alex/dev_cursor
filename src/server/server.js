@@ -313,6 +313,31 @@ app.put("/api/courses/:id/notes", requireAuth, (req, res) => {
   );
 });
 
+app.put("/api/courses/:id", requireAuth, (req, res) => {
+  const courseId = Number(req.params.id);
+  const { title, description = "", notes = [] } = req.body;
+  if (!courseId) {
+    res.status(400).json({ error: "Invalid course id" });
+    return;
+  }
+  if (!title?.trim()) {
+    res.status(400).json({ error: "Course title is required" });
+    return;
+  }
+
+  db.run(
+    "UPDATE courses SET title = ?, description = ?, notes = ? WHERE id = ? AND user_id = ?",
+    [title.trim(), description.trim(), JSON.stringify(normalizeNotes(notes)), courseId, req.user.id],
+    function onUpdate(err) {
+      if (err) {
+        res.status(500).json({ error: "Could not update course" });
+        return;
+      }
+      res.json({ updated: this.changes });
+    }
+  );
+});
+
 app.put("/api/modules/:id/notes", requireAuth, (req, res) => {
   const moduleId = Number(req.params.id);
   if (!moduleId) {
@@ -331,6 +356,37 @@ app.put("/api/modules/:id/notes", requireAuth, (req, res) => {
     function onUpdate(err) {
       if (err) {
         res.status(500).json({ error: "Could not update module notes" });
+        return;
+      }
+      res.json({ updated: this.changes });
+    }
+  );
+});
+
+app.put("/api/modules/:id", requireAuth, (req, res) => {
+  const moduleId = Number(req.params.id);
+  const { title, notes = [] } = req.body;
+  if (!moduleId) {
+    res.status(400).json({ error: "Invalid module id" });
+    return;
+  }
+  if (!title?.trim()) {
+    res.status(400).json({ error: "Module title is required" });
+    return;
+  }
+
+  db.run(
+    `
+      UPDATE modules
+      SET title = ?, notes = ?
+      WHERE id = ? AND course_id IN (
+        SELECT id FROM courses WHERE user_id = ?
+      )
+    `,
+    [title.trim(), JSON.stringify(normalizeNotes(notes)), moduleId, req.user.id],
+    function onUpdate(err) {
+      if (err) {
+        res.status(500).json({ error: "Could not update module" });
         return;
       }
       res.json({ updated: this.changes });
