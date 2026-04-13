@@ -1,3 +1,44 @@
+$color-bg-start: #eef4ff;
+$color-bg-mid: #f7f0ff;
+$color-bg-end: #fff6ed;
+$color-text-primary: #1f2a36;
+$color-header-start: #2c5cff;
+$color-header-end: #7a4dff;
+$color-white: #fff;
+$color-panel-border: #e0e7ff;
+$color-card-border: #dbe4ff;
+$color-input-border: #cfdaff;
+$color-focus: #7a4dff;
+$color-user-email: #e6ebff;
+$color-danger: #b42318;
+$color-link: #3157d6;
+$color-secondary-bg: #eef2ff;
+$color-secondary-border: #cad6ff;
+$color-secondary-text: #2e47a1;
+$radius-panel: 14px;
+$radius-card: 12px;
+$radius-control: 10px;
+$space-1: 4px;
+$space-2: 8px;
+$space-3: 10px;
+$space-4: 12px;
+$space-5: 16px;
+$breakpoint-mobile: 768px;
+
+@mixin card-surface($radius: $radius-card) {
+  border: 1px solid $color-card-border;
+  border-radius: $radius;
+  background: linear-gradient(180deg, $color-white 0%, #f6f9ff 100%);
+  box-shadow: 0 4px 12px rgba(74, 102, 179, 0.08);
+}
+
+@mixin control-base {
+  font: inherit;
+  padding: $space-3;
+  border-radius: $radius-control;
+  border: 1px solid $color-input-border;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -5,102 +46,103 @@
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background: linear-gradient(135deg, #eef4ff 0%, #f7f0ff 50%, #fff6ed 100%);
-  color: #1f2a36;
+  background: linear-gradient(135deg, $color-bg-start 0%, $color-bg-mid 50%, $color-bg-end 100%);
+  color: $color-text-primary;
 }
 
 .app {
   max-width: 980px;
   margin: 0 auto;
-  padding: 16px;
+  padding: $space-5;
 }
 
 header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: linear-gradient(90deg, #2c5cff 0%, #7a4dff 100%);
-  color: #fff;
+  gap: $space-4;
+  margin-bottom: $space-5;
+  padding: 14px $space-5;
+  border-radius: $radius-panel;
+  background: linear-gradient(90deg, $color-header-start 0%, $color-header-end 100%);
+  color: $color-white;
   box-shadow: 0 8px 24px rgba(44, 92, 255, 0.25);
-}
 
-header a {
-  color: #fff;
-  text-decoration: none;
+  a {
+    color: $color-white;
+    text-decoration: none;
+  }
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: $space-3;
 }
 
 .user-email {
   font-size: 14px;
-  color: #e6ebff;
+  color: $color-user-email;
 }
 
 .panel {
   background: rgba(255, 255, 255, 0.9);
-  border: 1px solid #e0e7ff;
-  border-radius: 14px;
-  padding: 16px;
-  margin-bottom: 16px;
+  border: 1px solid $color-panel-border;
+  border-radius: $radius-panel;
+  padding: $space-5;
+  margin-bottom: $space-5;
   box-shadow: 0 8px 24px rgba(59, 83, 145, 0.08);
   backdrop-filter: blur(2px);
 }
 
 .card,
 .lesson-card {
-  border: 1px solid #dbe4ff;
-  border-radius: 12px;
-  padding: 12px;
-  margin-top: 10px;
-  background: linear-gradient(180deg, #ffffff 0%, #f6f9ff 100%);
-  box-shadow: 0 4px 12px rgba(74, 102, 179, 0.08);
+  @include card-surface;
+  padding: $space-4;
+  margin-top: $space-3;
 }
 
-.lesson-preview h4 {
-  margin: 0 0 8px;
+.lesson-preview {
+  h4 {
+    margin: 0 0 $space-2;
+  }
 }
 
 .progress-badge {
-  margin: 0 0 8px;
+  margin: 0 0 $space-2;
   display: inline-block;
-  background: #eef2ff;
-  border: 1px solid #cad6ff;
-  color: #2e47a1;
+  background: $color-secondary-bg;
+  border: 1px solid $color-secondary-border;
+  color: $color-secondary-text;
   border-radius: 999px;
-  padding: 4px 10px;
+  padding: $space-1 10px;
   font-size: 13px;
 }
 
 .notes-editor {
-  margin: 10px 0;
+  margin: $space-3 0;
+}
+
+.notes-input-row,
+.form-grid {
+  display: grid;
+  gap: $space-2;
 }
 
 .notes-input-row {
-  display: grid;
   grid-template-columns: 1fr auto;
-  gap: 8px;
 }
 
 .notes-list {
-  margin: 8px 0 0;
+  margin: $space-2 0 0;
   padding-left: 18px;
-}
 
-.notes-list li {
-  margin-bottom: 4px;
+  li {
+    margin-bottom: $space-1;
+  }
 }
 
 .form-grid {
-  display: grid;
-  gap: 8px;
   grid-template-columns: 1fr auto;
 }
 
@@ -109,7 +151,7 @@ header a {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: $space-5;
 }
 
 .auth-panel {
@@ -118,7 +160,7 @@ header a {
 
 .auth-form {
   display: grid;
-  gap: 10px;
+  gap: $space-3;
 }
 
 .field-label {
@@ -136,43 +178,40 @@ header a {
 input,
 textarea,
 button {
-  font: inherit;
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid #cfdaff;
+  @include control-base;
 }
 
 button {
   cursor: pointer;
   border: none;
-  background: linear-gradient(90deg, #2c5cff 0%, #7a4dff 100%);
-  color: #fff;
+  background: linear-gradient(90deg, $color-header-start 0%, $color-header-end 100%);
+  color: $color-white;
   font-weight: 600;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
 
-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 16px rgba(56, 81, 160, 0.25);
-}
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 16px rgba(56, 81, 160, 0.25);
+  }
 
-button.secondary {
-  background: #eef2ff;
-  color: #2e47a1;
-  border: 1px solid #cad6ff;
+  &.secondary {
+    background: $color-secondary-bg;
+    color: $color-secondary-text;
+    border: 1px solid $color-secondary-border;
+  }
 }
 
 input:focus,
 textarea:focus {
   outline: none;
-  border-color: #7a4dff;
+  border-color: $color-focus;
   box-shadow: 0 0 0 3px rgba(122, 77, 255, 0.15);
 }
 
 .actions {
   display: flex;
-  gap: 8px;
-  margin-top: 8px;
+  gap: $space-2;
+  margin-top: $space-2;
   flex-wrap: wrap;
 }
 
@@ -180,32 +219,32 @@ textarea:focus {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: $space-2;
 }
 
 .text-button {
-  margin-top: 10px;
+  margin-top: $space-3;
   border: none;
   background: transparent;
-  color: #3157d6;
+  color: $color-link;
   padding: 0;
   box-shadow: none;
-}
 
-.text-button:hover {
-  transform: none;
-  box-shadow: none;
-  text-decoration: underline;
+  &:hover {
+    transform: none;
+    box-shadow: none;
+    text-decoration: underline;
+  }
 }
 
 .error-text {
   margin: 0;
-  color: #b42318;
+  color: $color-danger;
 }
 
-@media (max-width: 768px) {
+@media (max-width: $breakpoint-mobile) {
   .app {
-    padding: 12px;
+    padding: $space-4;
   }
 
   header {
@@ -231,7 +270,7 @@ textarea:focus {
 
   .card {
     display: grid;
-    gap: 10px;
+    gap: $space-3;
   }
 
   .module-head {
@@ -243,8 +282,10 @@ textarea:focus {
     width: 100%;
   }
 
-  .actions button {
-    width: auto;
-    flex: 1 1 45%;
+  .actions {
+    button {
+      width: auto;
+      flex: 1 1 45%;
+    }
   }
 }
