@@ -21,7 +21,7 @@ function Layout({ children, userEmail, onLogout }) {
   return (
     <div className="app">
       <header>
-        <h1>📘 Трекер обучения и прогресса</h1>
+        <h1>📘 Сам себе трекер прогресса</h1>
         <div className="header-actions">
           <Link to="/">📚 Каталог курсов</Link>
           <span className="user-email">👤 {userEmail}</span>
