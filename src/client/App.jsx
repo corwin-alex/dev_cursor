@@ -17,6 +17,18 @@ async function api(path, options = {}, token = "") {
   return response.json();
 }
 
+const PROGRESS_STEPS = [
+  { value: 0, label: "Не начато" },
+  { value: 25, label: "25%" },
+  { value: 50, label: "50%" },
+  { value: 75, label: "75%" },
+  { value: 100, label: "Завершено" }
+];
+
+function getProgressLabel(value) {
+  return PROGRESS_STEPS.find((step) => step.value === value)?.label || "Не начато";
+}
+
 function Layout({ children, userEmail, onLogout }) {
   return (
     <div className="app">
@@ -200,6 +212,20 @@ function CoursePage({ token, user, onLogout }) {
     load();
   };
 
+  const updateCourseNotes = async (courseId, notes) => {
+    setSaving((prev) => ({ ...prev, [`course-${courseId}`]: true }));
+    await api(`/api/courses/${courseId}/notes`, { method: "PUT", body: JSON.stringify({ notes }) }, token);
+    setSaving((prev) => ({ ...prev, [`course-${courseId}`]: false }));
+    load();
+  };
+
+  const updateModuleNotes = async (moduleId, notes) => {
+    setSaving((prev) => ({ ...prev, [`module-${moduleId}`]: true }));
+    await api(`/api/modules/${moduleId}/notes`, { method: "PUT", body: JSON.stringify({ notes }) }, token);
+    setSaving((prev) => ({ ...prev, [`module-${moduleId}`]: false }));
+    load();
+  };
+
   const removeModule = async (moduleId) => {
     await api(`/api/modules/${moduleId}`, { method: "DELETE" }, token);
     load();
@@ -228,6 +254,12 @@ function CoursePage({ token, user, onLogout }) {
       <section className="panel">
         <h2>{course.title}</h2>
         <p>{course.description || "Без описания"}</p>
+        <NotesEditor
+          title="Заметки по курсу"
+          notes={course.notes || []}
+          isSaving={Boolean(saving[`course-${course.id}`])}
+          onSave={(notes) => updateCourseNotes(course.id, notes)}
+        />
         <form onSubmit={addModule} className="form-grid">
           <label className="field-label">
             Название модуля
@@ -245,6 +277,13 @@ function CoursePage({ token, user, onLogout }) {
               🗑️ Удалить модуль
             </button>
           </div>
+
+          <NotesEditor
+            title="Заметки по модулю"
+            notes={module.notes || []}
+            isSaving={Boolean(saving[`module-${module.id}`])}
+            onSave={(notes) => updateModuleNotes(module.id, notes)}
+          />
 
           <div className="form-grid">
             <label className="field-label">
@@ -278,42 +317,144 @@ function CoursePage({ token, user, onLogout }) {
 
 function LessonCard({ lesson, onSave, onDelete, isSaving }) {
   const [form, setForm] = useState(lesson);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     setForm(lesson);
+    setIsEditing(false);
   }, [lesson]);
+
+  const saveChanges = async () => {
+    await onSave(form);
+    setIsEditing(false);
+  };
+
+  const cancelChanges = () => {
+    setForm(lesson);
+    setIsEditing(false);
+  };
 
   return (
     <article className="lesson-card">
-      <div className="form-grid lesson-inline">
-        <label className="field-label">
-          Название урока
-          <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-        </label>
-        <label className="field-label">
-          Прогресс (%)
-          <input
-            type="number"
-            min={0}
-            max={100}
-            value={form.progress}
-            onChange={(e) => setForm({ ...form, progress: Number(e.target.value) })}
+      {!isEditing && (
+        <div className="lesson-preview">
+          <h4>{form.title}</h4>
+          <p className="progress-badge">Прогресс: {getProgressLabel(form.progress)}</p>
+          <NotesList notes={form.notes || []} emptyText="Нет заметок по уроку." />
+        </div>
+      )}
+      {isEditing && (
+        <>
+          <div className="form-grid lesson-inline">
+            <label className="field-label">
+              Название урока
+              <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            </label>
+            <label className="field-label">
+              Прогресс
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={25}
+                value={form.progress}
+                onChange={(e) => setForm({ ...form, progress: Number(e.target.value) })}
+              />
+              <small>{getProgressLabel(form.progress)}</small>
+            </label>
+          </div>
+          <NotesEditor
+            title="Заметки по уроку"
+            notes={form.notes || []}
+            isSaving={false}
+            onSave={(notes) => setForm((prev) => ({ ...prev, notes }))}
+            localOnly
           />
-        </label>
-      </div>
-      <label className="field-label">
-        Заметки по уроку
-        <textarea value={form.notes} rows={3} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-      </label>
+        </>
+      )}
       <div className="actions">
-        <button type="button" onClick={() => onSave(form)} disabled={isSaving}>
-          {isSaving ? "Сохраняем..." : "💾 Сохранить"}
-        </button>
+        {!isEditing && (
+          <button type="button" onClick={() => setIsEditing(true)}>
+            ✏️ Редактировать
+          </button>
+        )}
+        {isEditing && (
+          <>
+            <button type="button" onClick={saveChanges} disabled={isSaving}>
+              {isSaving ? "Сохраняем..." : "💾 Сохранить"}
+            </button>
+            <button type="button" onClick={cancelChanges}>
+              Отмена
+            </button>
+          </>
+        )}
         <button type="button" onClick={() => onDelete(lesson.id)}>
           🗑️ Удалить урок
         </button>
       </div>
     </article>
+  );
+}
+
+function NotesList({ notes, emptyText }) {
+  if (!notes.length) return <p>{emptyText}</p>;
+  return (
+    <ul className="notes-list">
+      {notes.map((note, index) => (
+        <li key={`${note}-${index}`}>{note}</li>
+      ))}
+    </ul>
+  );
+}
+
+function NotesEditor({ title, notes, onSave, isSaving, localOnly = false }) {
+  const [draft, setDraft] = useState(notes);
+  const [input, setInput] = useState("");
+
+  useEffect(() => {
+    setDraft(notes);
+  }, [notes]);
+
+  const addNote = async () => {
+    if (!input.trim()) return;
+    const next = [...draft, input.trim()];
+    setDraft(next);
+    setInput("");
+    if (localOnly) {
+      onSave(next);
+      return;
+    }
+    await onSave(next);
+  };
+
+  const removeNote = async (index) => {
+    const next = draft.filter((_, noteIndex) => noteIndex !== index);
+    setDraft(next);
+    if (localOnly) {
+      onSave(next);
+      return;
+    }
+    await onSave(next);
+  };
+
+  return (
+    <div className="notes-editor">
+      <label className="field-label">{title}</label>
+      <div className="notes-input-row">
+        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Новая заметка" />
+        <button type="button" onClick={addNote} disabled={isSaving}>
+          ➕ Добавить
+        </button>
+      </div>
+      <NotesList notes={draft} emptyText="Пока нет заметок." />
+      <div className="actions">
+        {draft.map((note, index) => (
+          <button key={`${note}-${index}`} type="button" className="secondary" onClick={() => removeNote(index)} disabled={isSaving}>
+            Удалить: {note.slice(0, 20)}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

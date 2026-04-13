@@ -12,6 +12,35 @@ app.use(express.static(publicDir));
 
 const sessions = new Map();
 
+function normalizeNotes(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item || "").trim()).filter(Boolean);
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => String(item || "").trim()).filter(Boolean);
+      }
+    } catch (err) {
+      return [trimmed];
+    }
+    return [trimmed];
+  }
+  return [];
+}
+
+function normalizeProgress(progress) {
+  const parsed = Number(progress);
+  if (!Number.isFinite(parsed)) return 0;
+  const allowed = [0, 25, 50, 75, 100];
+  return allowed.reduce((closest, current) =>
+    Math.abs(current - parsed) < Math.abs(closest - parsed) ? current : closest
+  );
+}
+
 function hashPassword(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
@@ -34,13 +63,13 @@ function requireAuth(req, res, next) {
 }
 
 function getCatalog(userId, callback) {
-  db.all("SELECT id, title, description FROM courses WHERE user_id = ? ORDER BY id DESC", [userId], (courseErr, courses) => {
+  db.all("SELECT id, title, description, notes FROM courses WHERE user_id = ? ORDER BY id DESC", [userId], (courseErr, courses) => {
     if (courseErr) {
       callback(courseErr);
       return;
     }
 
-    db.all("SELECT id, course_id, title FROM modules ORDER BY id DESC", (moduleErr, modules) => {
+    db.all("SELECT id, course_id, title, notes FROM modules ORDER BY id DESC", (moduleErr, modules) => {
       if (moduleErr) {
         callback(moduleErr);
         return;
@@ -62,13 +91,17 @@ function getCatalog(userId, callback) {
           lessons.forEach((lesson) => {
             const module = modulesByCourse.get(lesson.module_id);
             if (module) {
-              module.lessons.push(lesson);
+              module.lessons.push({ ...lesson, notes: normalizeNotes(lesson.notes) });
             }
           });
 
           const result = courses.map((course) => {
             const courseModules = [...modulesByCourse.values()].filter((mod) => mod.course_id === course.id);
-            return { ...course, modules: courseModules };
+            return {
+              ...course,
+              notes: normalizeNotes(course.notes),
+              modules: courseModules.map((mod) => ({ ...mod, notes: normalizeNotes(mod.notes) }))
+            };
           });
 
           callback(null, result);
@@ -145,15 +178,15 @@ app.get("/api/auth/me", requireAuth, (req, res) => {
 });
 
 app.post("/api/courses", requireAuth, (req, res) => {
-  const { title, description = "" } = req.body;
+  const { title, description = "", notes = [] } = req.body;
   if (!title?.trim()) {
     res.status(400).json({ error: "Course title is required" });
     return;
   }
 
   db.run(
-    "INSERT INTO courses (user_id, title, description) VALUES (?, ?, ?)",
-    [req.user.id, title.trim(), description.trim()],
+    "INSERT INTO courses (user_id, title, description, notes) VALUES (?, ?, ?, ?)",
+    [req.user.id, title.trim(), description.trim(), JSON.stringify(normalizeNotes(notes))],
     function onInsert(err) {
       if (err) {
         res.status(500).json({ error: "Could not create course" });
@@ -165,7 +198,7 @@ app.post("/api/courses", requireAuth, (req, res) => {
 });
 
 app.post("/api/modules", requireAuth, (req, res) => {
-  const { courseId, title } = req.body;
+  const { courseId, title, notes = [] } = req.body;
   if (!courseId || !title?.trim()) {
     res.status(400).json({ error: "courseId and module title are required" });
     return;
@@ -177,8 +210,8 @@ app.post("/api/modules", requireAuth, (req, res) => {
       return;
     }
     db.run(
-      "INSERT INTO modules (course_id, title) VALUES (?, ?)",
-      [courseId, title.trim()],
+      "INSERT INTO modules (course_id, title, notes) VALUES (?, ?, ?)",
+      [courseId, title.trim(), JSON.stringify(normalizeNotes(notes))],
       function onInsert(err) {
         if (err) {
           res.status(500).json({ error: "Could not create module" });
@@ -211,7 +244,7 @@ app.post("/api/lessons", requireAuth, (req, res) => {
         return;
       }
       db.run(
-        "INSERT INTO lessons (module_id, title, progress, notes) VALUES (?, ?, 0, '')",
+        "INSERT INTO lessons (module_id, title, progress, notes) VALUES (?, ?, 0, '[]')",
         [moduleId, title.trim()],
         function onInsert(err) {
           if (err) {
@@ -233,7 +266,8 @@ app.put("/api/lessons/:id", requireAuth, (req, res) => {
     return;
   }
 
-  const safeProgress = Number.isInteger(progress) ? Math.max(0, Math.min(100, progress)) : 0;
+  const safeProgress = normalizeProgress(progress);
+  const safeNotes = JSON.stringify(normalizeNotes(notes));
   db.run(
     `
       UPDATE lessons
@@ -245,10 +279,54 @@ app.put("/api/lessons/:id", requireAuth, (req, res) => {
         WHERE courses.user_id = ?
       )
     `,
-    [String(title || "").trim(), safeProgress, String(notes || ""), lessonId, req.user.id],
+    [String(title || "").trim(), safeProgress, safeNotes, lessonId, req.user.id],
     function onUpdate(err) {
       if (err) {
         res.status(500).json({ error: "Could not update lesson" });
+        return;
+      }
+      res.json({ updated: this.changes });
+    }
+  );
+});
+
+app.put("/api/courses/:id/notes", requireAuth, (req, res) => {
+  const courseId = Number(req.params.id);
+  if (!courseId) {
+    res.status(400).json({ error: "Invalid course id" });
+    return;
+  }
+  db.run(
+    "UPDATE courses SET notes = ? WHERE id = ? AND user_id = ?",
+    [JSON.stringify(normalizeNotes(req.body.notes)), courseId, req.user.id],
+    function onUpdate(err) {
+      if (err) {
+        res.status(500).json({ error: "Could not update course notes" });
+        return;
+      }
+      res.json({ updated: this.changes });
+    }
+  );
+});
+
+app.put("/api/modules/:id/notes", requireAuth, (req, res) => {
+  const moduleId = Number(req.params.id);
+  if (!moduleId) {
+    res.status(400).json({ error: "Invalid module id" });
+    return;
+  }
+  db.run(
+    `
+      UPDATE modules
+      SET notes = ?
+      WHERE id = ? AND course_id IN (
+        SELECT id FROM courses WHERE user_id = ?
+      )
+    `,
+    [JSON.stringify(normalizeNotes(req.body.notes)), moduleId, req.user.id],
+    function onUpdate(err) {
+      if (err) {
+        res.status(500).json({ error: "Could not update module notes" });
         return;
       }
       res.json({ updated: this.changes });

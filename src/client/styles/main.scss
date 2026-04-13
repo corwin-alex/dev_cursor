@@ -64,6 +64,40 @@ header a {
   box-shadow: 0 4px 12px rgba(74, 102, 179, 0.08);
 }
 
+.lesson-preview h4 {
+  margin: 0 0 8px;
+}
+
+.progress-badge {
+  margin: 0 0 8px;
+  display: inline-block;
+  background: #eef2ff;
+  border: 1px solid #cad6ff;
+  color: #2e47a1;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+.notes-editor {
+  margin: 10px 0;
+}
+
+.notes-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.notes-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.notes-list li {
+  margin-bottom: 4px;
+}
+
 .form-grid {
   display: grid;
   gap: 8px;
@@ -120,6 +154,12 @@ button {
 button:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 16px rgba(56, 81, 160, 0.25);
+}
+
+button.secondary {
+  background: #eef2ff;
+  color: #2e47a1;
+  border: 1px solid #cad6ff;
 }
 
 input:focus,
@@ -180,7 +220,8 @@ textarea:focus {
   }
 
   .form-grid,
-  .form-grid.lesson-inline {
+  .form-grid.lesson-inline,
+  .notes-input-row {
     grid-template-columns: 1fr;
   }
 
