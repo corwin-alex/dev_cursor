@@ -21,12 +21,12 @@ function Layout({ children, userEmail, onLogout }) {
   return (
     <div className="app">
       <header>
-        <h1>Трекер обучения и прогресса</h1>
+        <h1>📘 Трекер обучения и прогресса</h1>
         <div className="header-actions">
-          <Link to="/">Каталог курсов</Link>
-          <span className="user-email">{userEmail}</span>
+          <Link to="/">📚 Каталог курсов</Link>
+          <span className="user-email">👤 {userEmail}</span>
           <button type="button" onClick={onLogout}>
-            Выйти
+            🚪 Выйти
           </button>
         </div>
       </header>
@@ -58,7 +58,7 @@ function AuthPage({ onAuth }) {
   return (
     <div className="auth-wrap">
       <section className="panel auth-panel">
-        <h2>{mode === "login" ? "Вход" : "Регистрация"}</h2>
+        <h2>{mode === "login" ? "🔐 Вход" : "✨ Регистрация"}</h2>
         <form onSubmit={onSubmit} className="auth-form">
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" required />
           <input
@@ -117,7 +117,7 @@ function CatalogPage({ token, user, onLogout }) {
   return (
     <Layout userEmail={user.email} onLogout={onLogout}>
       <section className="panel">
-        <h2>Новый курс</h2>
+        <h2>➕ Новый курс</h2>
         <form onSubmit={onSubmit} className="form-grid">
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Название курса" />
           <input
@@ -130,7 +130,7 @@ function CatalogPage({ token, user, onLogout }) {
       </section>
 
       <section className="panel">
-        <h2>Каталог</h2>
+        <h2>🗂️ Каталог</h2>
         {!catalog.length && <p>Пока пусто. Добавьте первый курс.</p>}
         {catalog.map((course) => (
           <article key={course.id} className="card">
@@ -140,9 +140,9 @@ function CatalogPage({ token, user, onLogout }) {
               <small>Модулей: {course.modules.length}</small>
             </div>
             <div className="actions">
-              <Link to={`/courses/${course.id}`}>Открыть</Link>
+              <Link to={`/courses/${course.id}`}>📖 Открыть</Link>
               <button type="button" onClick={() => removeCourse(course.id)}>
-                Удалить
+                🗑️ Удалить
               </button>
             </div>
           </article>
@@ -214,7 +214,7 @@ function CoursePage({ token, user, onLogout }) {
         <section className="panel">
           <p>Курс не найден.</p>
           <button type="button" onClick={() => navigate("/")}>
-            Назад
+            ← Назад
           </button>
         </section>
       </Layout>
@@ -241,7 +241,7 @@ function CoursePage({ token, user, onLogout }) {
           <div className="module-head">
             <h3>{module.title}</h3>
             <button type="button" onClick={() => removeModule(module.id)}>
-              Удалить модуль
+              🗑️ Удалить модуль
             </button>
           </div>
 
@@ -252,7 +252,7 @@ function CoursePage({ token, user, onLogout }) {
               placeholder="Название урока"
             />
             <button type="button" onClick={() => addLesson(module.id)}>
-              Добавить урок
+              ➕ Добавить урок
             </button>
           </div>
 
@@ -300,10 +300,10 @@ function LessonCard({ lesson, onSave, onDelete, isSaving }) {
       />
       <div className="actions">
         <button type="button" onClick={() => onSave(form)} disabled={isSaving}>
-          {isSaving ? "Сохраняем..." : "Сохранить"}
+          {isSaving ? "Сохраняем..." : "💾 Сохранить"}
         </button>
         <button type="button" onClick={() => onDelete(lesson.id)}>
-          Удалить урок
+          🗑️ Удалить урок
         </button>
       </div>
     </article>
