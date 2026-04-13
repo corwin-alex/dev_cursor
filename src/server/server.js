@@ -1,4 +1,5 @@
 const path = require("path");
+const crypto = require("crypto");
 const express = require("express");
 const db = require("./db");
 
@@ -9,8 +10,31 @@ const publicDir = path.join(__dirname, "../../dist/public");
 app.use(express.json());
 app.use(express.static(publicDir));
 
-function getCatalog(callback) {
-  db.all("SELECT id, title, description FROM courses ORDER BY id DESC", (courseErr, courses) => {
+const sessions = new Map();
+
+function hashPassword(value) {
+  return crypto.createHash("sha256").update(value).digest("hex");
+}
+
+function getUserFromToken(req) {
+  const header = req.headers.authorization || "";
+  if (!header.startsWith("Bearer ")) return null;
+  const token = header.slice(7).trim();
+  return sessions.get(token) || null;
+}
+
+function requireAuth(req, res, next) {
+  const user = getUserFromToken(req);
+  if (!user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  req.user = user;
+  next();
+}
+
+function getCatalog(userId, callback) {
+  db.all("SELECT id, title, description FROM courses WHERE user_id = ? ORDER BY id DESC", [userId], (courseErr, courses) => {
     if (courseErr) {
       callback(courseErr);
       return;
@@ -55,7 +79,13 @@ function getCatalog(callback) {
 }
 
 app.get("/api/catalog", (req, res) => {
-  getCatalog((err, catalog) => {
+  const user = getUserFromToken(req);
+  if (!user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  getCatalog(user.id, (err, catalog) => {
     if (err) {
       res.status(500).json({ error: "Could not load catalog" });
       return;
@@ -64,7 +94,57 @@ app.get("/api/catalog", (req, res) => {
   });
 });
 
-app.post("/api/courses", (req, res) => {
+app.post("/api/auth/register", (req, res) => {
+  const email = String(req.body.email || "").trim().toLowerCase();
+  const password = String(req.body.password || "");
+  if (!email || !password) {
+    res.status(400).json({ error: "Email and password are required" });
+    return;
+  }
+
+  db.run(
+    "INSERT INTO users (email, password_hash) VALUES (?, ?)",
+    [email, hashPassword(password)],
+    function onCreate(err) {
+      if (err) {
+        res.status(400).json({ error: "User already exists or invalid data" });
+        return;
+      }
+      const token = crypto.randomUUID();
+      sessions.set(token, { id: this.lastID, email });
+      res.status(201).json({ token, user: { id: this.lastID, email } });
+    }
+  );
+});
+
+app.post("/api/auth/login", (req, res) => {
+  const email = String(req.body.email || "").trim().toLowerCase();
+  const password = String(req.body.password || "");
+  if (!email || !password) {
+    res.status(400).json({ error: "Email and password are required" });
+    return;
+  }
+
+  db.get(
+    "SELECT id, email, password_hash FROM users WHERE email = ?",
+    [email],
+    (err, user) => {
+      if (err || !user || user.password_hash !== hashPassword(password)) {
+        res.status(401).json({ error: "Invalid credentials" });
+        return;
+      }
+      const token = crypto.randomUUID();
+      sessions.set(token, { id: user.id, email: user.email });
+      res.json({ token, user: { id: user.id, email: user.email } });
+    }
+  );
+});
+
+app.get("/api/auth/me", requireAuth, (req, res) => {
+  res.json({ user: req.user });
+});
+
+app.post("/api/courses", requireAuth, (req, res) => {
   const { title, description = "" } = req.body;
   if (!title?.trim()) {
     res.status(400).json({ error: "Course title is required" });
@@ -72,8 +152,8 @@ app.post("/api/courses", (req, res) => {
   }
 
   db.run(
-    "INSERT INTO courses (title, description) VALUES (?, ?)",
-    [title.trim(), description.trim()],
+    "INSERT INTO courses (user_id, title, description) VALUES (?, ?, ?)",
+    [req.user.id, title.trim(), description.trim()],
     function onInsert(err) {
       if (err) {
         res.status(500).json({ error: "Could not create course" });
@@ -84,47 +164,68 @@ app.post("/api/courses", (req, res) => {
   );
 });
 
-app.post("/api/modules", (req, res) => {
+app.post("/api/modules", requireAuth, (req, res) => {
   const { courseId, title } = req.body;
   if (!courseId || !title?.trim()) {
     res.status(400).json({ error: "courseId and module title are required" });
     return;
   }
 
-  db.run(
-    "INSERT INTO modules (course_id, title) VALUES (?, ?)",
-    [courseId, title.trim()],
-    function onInsert(err) {
-      if (err) {
-        res.status(500).json({ error: "Could not create module" });
-        return;
-      }
-      res.status(201).json({ id: this.lastID });
+  db.get("SELECT id FROM courses WHERE id = ? AND user_id = ?", [courseId, req.user.id], (checkErr, course) => {
+    if (checkErr || !course) {
+      res.status(404).json({ error: "Course not found" });
+      return;
     }
-  );
+    db.run(
+      "INSERT INTO modules (course_id, title) VALUES (?, ?)",
+      [courseId, title.trim()],
+      function onInsert(err) {
+        if (err) {
+          res.status(500).json({ error: "Could not create module" });
+          return;
+        }
+        res.status(201).json({ id: this.lastID });
+      }
+    );
+  });
 });
 
-app.post("/api/lessons", (req, res) => {
+app.post("/api/lessons", requireAuth, (req, res) => {
   const { moduleId, title } = req.body;
   if (!moduleId || !title?.trim()) {
     res.status(400).json({ error: "moduleId and lesson title are required" });
     return;
   }
 
-  db.run(
-    "INSERT INTO lessons (module_id, title, progress, notes) VALUES (?, ?, 0, '')",
-    [moduleId, title.trim()],
-    function onInsert(err) {
-      if (err) {
-        res.status(500).json({ error: "Could not create lesson" });
+  db.get(
+    `
+      SELECT modules.id
+      FROM modules
+      INNER JOIN courses ON courses.id = modules.course_id
+      WHERE modules.id = ? AND courses.user_id = ?
+    `,
+    [moduleId, req.user.id],
+    (checkErr, module) => {
+      if (checkErr || !module) {
+        res.status(404).json({ error: "Module not found" });
         return;
       }
-      res.status(201).json({ id: this.lastID });
+      db.run(
+        "INSERT INTO lessons (module_id, title, progress, notes) VALUES (?, ?, 0, '')",
+        [moduleId, title.trim()],
+        function onInsert(err) {
+          if (err) {
+            res.status(500).json({ error: "Could not create lesson" });
+            return;
+          }
+          res.status(201).json({ id: this.lastID });
+        }
+      );
     }
   );
 });
 
-app.put("/api/lessons/:id", (req, res) => {
+app.put("/api/lessons/:id", requireAuth, (req, res) => {
   const lessonId = Number(req.params.id);
   const { title, progress, notes } = req.body;
   if (!lessonId) {
@@ -134,8 +235,17 @@ app.put("/api/lessons/:id", (req, res) => {
 
   const safeProgress = Number.isInteger(progress) ? Math.max(0, Math.min(100, progress)) : 0;
   db.run(
-    "UPDATE lessons SET title = ?, progress = ?, notes = ? WHERE id = ?",
-    [String(title || "").trim(), safeProgress, String(notes || ""), lessonId],
+    `
+      UPDATE lessons
+      SET title = ?, progress = ?, notes = ?
+      WHERE id = ? AND module_id IN (
+        SELECT modules.id
+        FROM modules
+        INNER JOIN courses ON courses.id = modules.course_id
+        WHERE courses.user_id = ?
+      )
+    `,
+    [String(title || "").trim(), safeProgress, String(notes || ""), lessonId, req.user.id],
     function onUpdate(err) {
       if (err) {
         res.status(500).json({ error: "Could not update lesson" });
@@ -146,8 +256,8 @@ app.put("/api/lessons/:id", (req, res) => {
   );
 });
 
-app.delete("/api/courses/:id", (req, res) => {
-  db.run("DELETE FROM courses WHERE id = ?", [req.params.id], function onDelete(err) {
+app.delete("/api/courses/:id", requireAuth, (req, res) => {
+  db.run("DELETE FROM courses WHERE id = ? AND user_id = ?", [req.params.id, req.user.id], function onDelete(err) {
     if (err) {
       res.status(500).json({ error: "Could not delete course" });
       return;
@@ -156,24 +266,56 @@ app.delete("/api/courses/:id", (req, res) => {
   });
 });
 
-app.delete("/api/modules/:id", (req, res) => {
-  db.run("DELETE FROM modules WHERE id = ?", [req.params.id], function onDelete(err) {
-    if (err) {
-      res.status(500).json({ error: "Could not delete module" });
-      return;
+app.delete("/api/modules/:id", requireAuth, (req, res) => {
+  db.run(
+    `
+      DELETE FROM modules
+      WHERE id = ? AND course_id IN (
+        SELECT id FROM courses WHERE user_id = ?
+      )
+    `,
+    [req.params.id, req.user.id],
+    function onDelete(err) {
+      if (err) {
+        res.status(500).json({ error: "Could not delete module" });
+        return;
+      }
+      res.json({ deleted: this.changes });
     }
-    res.json({ deleted: this.changes });
-  });
+  );
 });
 
-app.delete("/api/lessons/:id", (req, res) => {
-  db.run("DELETE FROM lessons WHERE id = ?", [req.params.id], function onDelete(err) {
-    if (err) {
-      res.status(500).json({ error: "Could not delete lesson" });
-      return;
+app.delete("/api/lessons/:id", requireAuth, (req, res) => {
+  db.run(
+    `
+      DELETE FROM lessons
+      WHERE id = ? AND module_id IN (
+        SELECT modules.id
+        FROM modules
+        INNER JOIN courses ON courses.id = modules.course_id
+        WHERE courses.user_id = ?
+      )
+    `,
+    [req.params.id, req.user.id],
+    function onDelete(err) {
+      if (err) {
+        res.status(500).json({ error: "Could not delete lesson" });
+        return;
+      }
+      res.json({ deleted: this.changes });
     }
-    res.json({ deleted: this.changes });
-  });
+  );
+});
+
+app.post("/api/auth/logout", requireAuth, (req, res) => {
+  const header = req.headers.authorization || "";
+  const token = header.slice(7).trim();
+  sessions.delete(token);
+  res.status(204).end();
+});
+
+app.get("/api/health", (req, res) => {
+  res.json({ ok: true });
 });
 
 app.get("*", (req, res) => {

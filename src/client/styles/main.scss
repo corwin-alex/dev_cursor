@@ -19,7 +19,19 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   margin-bottom: 16px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-email {
+  font-size: 14px;
+  color: #5a6775;
 }
 
 .panel {
@@ -45,6 +57,23 @@ header {
   grid-template-columns: 1fr auto;
 }
 
+.auth-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.auth-panel {
+  width: min(420px, 100%);
+}
+
+.auth-form {
+  display: grid;
+  gap: 10px;
+}
+
 input,
 textarea,
 button {
@@ -60,10 +89,66 @@ button {
   display: flex;
   gap: 8px;
   margin-top: 8px;
+  flex-wrap: wrap;
 }
 
 .module-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
+}
+
+.text-button {
+  margin-top: 10px;
+  border: none;
+  background: transparent;
+  color: #1e4ea8;
+  padding: 0;
+}
+
+.error-text {
+  margin: 0;
+  color: #b42318;
+}
+
+@media (max-width: 768px) {
+  .app {
+    padding: 12px;
+  }
+
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .form-grid,
+  .form-grid.lesson-inline {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    display: grid;
+    gap: 10px;
+  }
+
+  .module-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  button {
+    width: 100%;
+  }
+
+  .actions button {
+    width: auto;
+    flex: 1 1 45%;
+  }
 }

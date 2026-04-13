@@ -13,10 +13,20 @@ db.serialize(() => {
   db.run("PRAGMA foreign_keys = ON");
 
   db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL
+    )
+  `);
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS courses (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL DEFAULT 0,
       title TEXT NOT NULL,
-      description TEXT DEFAULT ''
+      description TEXT DEFAULT '',
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
 
@@ -39,6 +49,8 @@ db.serialize(() => {
       FOREIGN KEY(module_id) REFERENCES modules(id) ON DELETE CASCADE
     )
   `);
+
+  db.run("ALTER TABLE courses ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0", () => {});
 });
 
 module.exports = db;

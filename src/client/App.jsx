@@ -1,39 +1,91 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 
-async function api(path, options = {}) {
+async function api(path, options = {}, token = "") {
   const response = await fetch(path, {
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
     ...options
   });
   if (!response.ok) {
-    throw new Error("Request failed");
+    const errorData = await response.json().catch(() => ({ error: "Request failed" }));
+    throw new Error(errorData.error || "Request failed");
   }
-  if (response.status === 204) {
-    return null;
-  }
+  if (response.status === 204) return null;
   return response.json();
 }
 
-function Layout({ children }) {
+function Layout({ children, userEmail, onLogout }) {
   return (
     <div className="app">
       <header>
         <h1>Трекер обучения и прогресса</h1>
-        <Link to="/">Каталог курсов</Link>
+        <div className="header-actions">
+          <Link to="/">Каталог курсов</Link>
+          <span className="user-email">{userEmail}</span>
+          <button type="button" onClick={onLogout}>
+            Выйти
+          </button>
+        </div>
       </header>
       {children}
     </div>
   );
 }
 
-function CatalogPage() {
+function AuthPage({ onAuth }) {
+  const [mode, setMode] = useState("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const onSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+    try {
+      const result = await api(`/api/auth/${mode}`, {
+        method: "POST",
+        body: JSON.stringify({ email, password })
+      });
+      onAuth(result.token, result.user);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  return (
+    <div className="auth-wrap">
+      <section className="panel auth-panel">
+        <h2>{mode === "login" ? "Вход" : "Регистрация"}</h2>
+        <form onSubmit={onSubmit} className="auth-form">
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" required />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Пароль"
+            required
+          />
+          {error && <p className="error-text">{error}</p>}
+          <button type="submit">{mode === "login" ? "Войти" : "Создать аккаунт"}</button>
+        </form>
+        <button type="button" className="text-button" onClick={() => setMode(mode === "login" ? "register" : "login")}>
+          {mode === "login" ? "Нет аккаунта? Зарегистрироваться" : "Уже есть аккаунт? Войти"}
+        </button>
+      </section>
+    </div>
+  );
+}
+
+function CatalogPage({ token, user, onLogout }) {
   const [catalog, setCatalog] = useState([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
   const load = async () => {
-    const data = await api("/api/catalog");
+    const data = await api("/api/catalog", {}, token);
     setCatalog(data);
   };
 
@@ -44,22 +96,26 @@ function CatalogPage() {
   const onSubmit = async (event) => {
     event.preventDefault();
     if (!title.trim()) return;
-    await api("/api/courses", {
-      method: "POST",
-      body: JSON.stringify({ title, description })
-    });
+    await api(
+      "/api/courses",
+      {
+        method: "POST",
+        body: JSON.stringify({ title, description })
+      },
+      token
+    );
     setTitle("");
     setDescription("");
     load();
   };
 
   const removeCourse = async (id) => {
-    await api(`/api/courses/${id}`, { method: "DELETE" });
+    await api(`/api/courses/${id}`, { method: "DELETE" }, token);
     load();
   };
 
   return (
-    <Layout>
+    <Layout userEmail={user.email} onLogout={onLogout}>
       <section className="panel">
         <h2>Новый курс</h2>
         <form onSubmit={onSubmit} className="form-grid">
@@ -96,7 +152,7 @@ function CatalogPage() {
   );
 }
 
-function CoursePage() {
+function CoursePage({ token, user, onLogout }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [catalog, setCatalog] = useState([]);
@@ -105,7 +161,7 @@ function CoursePage() {
   const [saving, setSaving] = useState({});
 
   const load = async () => {
-    const data = await api("/api/catalog");
+    const data = await api("/api/catalog", {}, token);
     setCatalog(data);
   };
 
@@ -118,7 +174,11 @@ function CoursePage() {
   const addModule = async (event) => {
     event.preventDefault();
     if (!moduleTitle.trim()) return;
-    await api("/api/modules", { method: "POST", body: JSON.stringify({ courseId: Number(id), title: moduleTitle }) });
+    await api(
+      "/api/modules",
+      { method: "POST", body: JSON.stringify({ courseId: Number(id), title: moduleTitle }) },
+      token
+    );
     setModuleTitle("");
     load();
   };
@@ -126,31 +186,31 @@ function CoursePage() {
   const addLesson = async (moduleId) => {
     const title = lessonTitles[moduleId];
     if (!title?.trim()) return;
-    await api("/api/lessons", { method: "POST", body: JSON.stringify({ moduleId, title }) });
+    await api("/api/lessons", { method: "POST", body: JSON.stringify({ moduleId, title }) }, token);
     setLessonTitles((prev) => ({ ...prev, [moduleId]: "" }));
     load();
   };
 
   const updateLesson = async (lesson) => {
     setSaving((prev) => ({ ...prev, [lesson.id]: true }));
-    await api(`/api/lessons/${lesson.id}`, { method: "PUT", body: JSON.stringify(lesson) });
+    await api(`/api/lessons/${lesson.id}`, { method: "PUT", body: JSON.stringify(lesson) }, token);
     setSaving((prev) => ({ ...prev, [lesson.id]: false }));
     load();
   };
 
   const removeModule = async (moduleId) => {
-    await api(`/api/modules/${moduleId}`, { method: "DELETE" });
+    await api(`/api/modules/${moduleId}`, { method: "DELETE" }, token);
     load();
   };
 
   const removeLesson = async (lessonId) => {
-    await api(`/api/lessons/${lessonId}`, { method: "DELETE" });
+    await api(`/api/lessons/${lessonId}`, { method: "DELETE" }, token);
     load();
   };
 
   if (!course) {
     return (
-      <Layout>
+      <Layout userEmail={user.email} onLogout={onLogout}>
         <section className="panel">
           <p>Курс не найден.</p>
           <button type="button" onClick={() => navigate("/")}>
@@ -162,7 +222,7 @@ function CoursePage() {
   }
 
   return (
-    <Layout>
+    <Layout userEmail={user.email} onLogout={onLogout}>
       <section className="panel">
         <h2>{course.title}</h2>
         <p>{course.description || "Без описания"}</p>
@@ -222,7 +282,7 @@ function LessonCard({ lesson, onSave, onDelete, isSaving }) {
 
   return (
     <article className="lesson-card">
-      <div className="form-grid">
+      <div className="form-grid lesson-inline">
         <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
         <input
           type="number"
@@ -251,10 +311,40 @@ function LessonCard({ lesson, onSave, onDelete, isSaving }) {
 }
 
 export default function App() {
+  const [token, setToken] = useState(localStorage.getItem("token") || "");
+  const [user, setUser] = useState(() => {
+    const raw = localStorage.getItem("user");
+    return raw ? JSON.parse(raw) : null;
+  });
+
+  const onAuth = (newToken, newUser) => {
+    localStorage.setItem("token", newToken);
+    localStorage.setItem("user", JSON.stringify(newUser));
+    setToken(newToken);
+    setUser(newUser);
+  };
+
+  const onLogout = async () => {
+    try {
+      await api("/api/auth/logout", { method: "POST" }, token);
+    } catch (err) {
+      // Ignore network or auth errors on local logout.
+    }
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setToken("");
+    setUser(null);
+  };
+
+  if (!token || !user) {
+    return <AuthPage onAuth={onAuth} />;
+  }
+
   return (
     <Routes>
-      <Route path="/" element={<CatalogPage />} />
-      <Route path="/courses/:id" element={<CoursePage />} />
+      <Route path="/" element={<CatalogPage token={token} user={user} onLogout={onLogout} />} />
+      <Route path="/courses/:id" element={<CoursePage token={token} user={user} onLogout={onLogout} />} />
+      <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 }
