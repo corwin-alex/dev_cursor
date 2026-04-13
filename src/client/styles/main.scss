@@ -68,9 +68,24 @@ header {
   color: $color-white;
   box-shadow: 0 8px 24px rgba(44, 92, 255, 0.25);
 
+  h1 {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    margin: 0;
+    font-size: 22px;
+  }
+
   a {
     color: $color-white;
     text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: $space-1;
+  }
+
+  .svg-inline--fa {
+    margin-right: 4px;
   }
 }
 
@@ -93,6 +108,27 @@ header {
   margin-bottom: $space-5;
   box-shadow: 0 8px 24px rgba(59, 83, 145, 0.08);
   backdrop-filter: blur(2px);
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    margin-top: 0;
+  }
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    margin-top: 0;
+  }
+
+  h4 {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    margin-top: 0;
+  }
 }
 
 .card,
@@ -139,6 +175,13 @@ header {
 
   li {
     margin-bottom: $space-1;
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+
+    .svg-inline--fa {
+      flex-shrink: 0;
+    }
   }
 }
 
@@ -169,6 +212,11 @@ header {
   font-size: 14px;
   font-weight: 600;
   color: #33415c;
+
+  .svg-inline--fa {
+    margin-right: 6px;
+    color: $color-header-start;
+  }
 }
 
 .span-two {
@@ -188,6 +236,9 @@ button {
   color: $color-white;
   font-weight: 600;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
 
   &:hover {
     transform: translateY(-1px);
