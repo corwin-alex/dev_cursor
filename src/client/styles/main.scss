@@ -43,16 +43,6 @@ $breakpoint-mobile: 768px;
   box-sizing: border-box;
 }
 
-.icon-text {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45em;
-
-  svg {
-    flex-shrink: 0;
-  }
-}
-
 body {
   margin: 0;
   font-family: Arial, sans-serif;
