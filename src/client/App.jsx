@@ -37,6 +37,7 @@ async function api(path, options = {}, token = "") {
   return response.json();
 }
 
+// UI работает только с фиксированными шагами прогресса.
 const PROGRESS_STEPS = [
   { value: 0, label: "Не начато" },
   { value: 25, label: "25%" },
@@ -224,6 +225,7 @@ function CoursePage({ token, user, onLogout }) {
   const [saving, setSaving] = useState({});
 
   const load = async () => {
+    // Держим страницу синхронной с сервером после любого изменения.
     const data = await api("/api/catalog", {}, token);
     setCatalog(data);
   };
@@ -428,6 +430,7 @@ function LessonCard({ lesson, onSave, onDelete, isSaving }) {
             titleIcon={faNoteSticky}
             notes={form.notes || []}
             isSaving={false}
+            // В режиме редактирования сначала меняем локальную форму, а не сервер.
             onSave={(notes) => setForm((prev) => ({ ...prev, notes }))}
             localOnly
           />
@@ -477,6 +480,7 @@ function NotesEditor({ title, titleIcon, notes, onSave, isSaving, localOnly = fa
   const [input, setInput] = useState("");
 
   useEffect(() => {
+    // Обновляем локальный список, если пришли свежие данные снаружи.
     setDraft(notes);
   }, [notes]);
 

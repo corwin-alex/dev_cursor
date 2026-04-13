@@ -13,6 +13,7 @@ app.use(express.static(publicDir));
 const sessions = new Map();
 
 function normalizeNotes(value) {
+  // Поддерживаем и массив строк, и старый формат с одной строкой.
   if (Array.isArray(value)) {
     return value.map((item) => String(item || "").trim()).filter(Boolean);
   }
@@ -33,6 +34,7 @@ function normalizeNotes(value) {
 }
 
 function normalizeProgress(progress) {
+  // Приводим значение к одному из разрешенных шагов прогресса.
   const parsed = Number(progress);
   if (!Number.isFinite(parsed)) return 0;
   const allowed = [0, 25, 50, 75, 100];
@@ -63,6 +65,7 @@ function requireAuth(req, res, next) {
 }
 
 function getCatalog(userId, callback) {
+  // Собираем дерево курс -> модуль -> урок из отдельных таблиц.
   db.all("SELECT id, title, description, notes FROM courses WHERE user_id = ? ORDER BY id DESC", [userId], (courseErr, courses) => {
     if (courseErr) {
       callback(courseErr);
@@ -89,6 +92,7 @@ function getCatalog(userId, callback) {
           });
 
           lessons.forEach((lesson) => {
+            // На чтении всегда отдаем заметки массивом.
             const module = modulesByCourse.get(lesson.module_id);
             if (module) {
               module.lessons.push({ ...lesson, notes: normalizeNotes(lesson.notes) });

@@ -10,6 +10,7 @@ if (databasePath !== ":memory:") {
 const db = new sqlite3.Database(databasePath);
 
 db.serialize(() => {
+  // Каскадное удаление нужно для связей курс -> модуль -> урок.
   db.run("PRAGMA foreign_keys = ON");
 
   db.run(`
@@ -52,6 +53,7 @@ db.serialize(() => {
     )
   `);
 
+  // Мягкая миграция для уже существующей локальной базы.
   db.run("ALTER TABLE courses ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0", () => {});
   db.run("ALTER TABLE courses ADD COLUMN notes TEXT DEFAULT '[]'", () => {});
   db.run("ALTER TABLE modules ADD COLUMN notes TEXT DEFAULT '[]'", () => {});
