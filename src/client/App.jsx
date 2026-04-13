@@ -60,14 +60,14 @@ function AuthPage({ onAuth }) {
       <section className="panel auth-panel">
         <h2>{mode === "login" ? "🔐 Вход" : "✨ Регистрация"}</h2>
         <form onSubmit={onSubmit} className="auth-form">
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" required />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Пароль"
-            required
-          />
+          <label className="field-label">
+            Email
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </label>
+          <label className="field-label">
+            Пароль
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          </label>
           {error && <p className="error-text">{error}</p>}
           <button type="submit">{mode === "login" ? "Войти" : "Создать аккаунт"}</button>
         </form>
@@ -119,12 +119,14 @@ function CatalogPage({ token, user, onLogout }) {
       <section className="panel">
         <h2>➕ Новый курс</h2>
         <form onSubmit={onSubmit} className="form-grid">
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Название курса" />
-          <input
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Краткое описание"
-          />
+          <label className="field-label span-two">
+            Название курса
+            <input value={title} onChange={(e) => setTitle(e.target.value)} />
+          </label>
+          <label className="field-label span-two">
+            Краткое описание
+            <input value={description} onChange={(e) => setDescription(e.target.value)} />
+          </label>
           <button type="submit">Добавить курс</button>
         </form>
       </section>
@@ -227,11 +229,10 @@ function CoursePage({ token, user, onLogout }) {
         <h2>{course.title}</h2>
         <p>{course.description || "Без описания"}</p>
         <form onSubmit={addModule} className="form-grid">
-          <input
-            value={moduleTitle}
-            onChange={(e) => setModuleTitle(e.target.value)}
-            placeholder="Название модуля"
-          />
+          <label className="field-label">
+            Название модуля
+            <input value={moduleTitle} onChange={(e) => setModuleTitle(e.target.value)} />
+          </label>
           <button type="submit">Добавить модуль</button>
         </form>
       </section>
@@ -246,11 +247,13 @@ function CoursePage({ token, user, onLogout }) {
           </div>
 
           <div className="form-grid">
-            <input
-              value={lessonTitles[module.id] || ""}
-              onChange={(e) => setLessonTitles((prev) => ({ ...prev, [module.id]: e.target.value }))}
-              placeholder="Название урока"
-            />
+            <label className="field-label">
+              Название урока
+              <input
+                value={lessonTitles[module.id] || ""}
+                onChange={(e) => setLessonTitles((prev) => ({ ...prev, [module.id]: e.target.value }))}
+              />
+            </label>
             <button type="button" onClick={() => addLesson(module.id)}>
               ➕ Добавить урок
             </button>
@@ -283,21 +286,25 @@ function LessonCard({ lesson, onSave, onDelete, isSaving }) {
   return (
     <article className="lesson-card">
       <div className="form-grid lesson-inline">
-        <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-        <input
-          type="number"
-          min={0}
-          max={100}
-          value={form.progress}
-          onChange={(e) => setForm({ ...form, progress: Number(e.target.value) })}
-        />
+        <label className="field-label">
+          Название урока
+          <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+        </label>
+        <label className="field-label">
+          Прогресс (%)
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={form.progress}
+            onChange={(e) => setForm({ ...form, progress: Number(e.target.value) })}
+          />
+        </label>
       </div>
-      <textarea
-        value={form.notes}
-        rows={3}
-        onChange={(e) => setForm({ ...form, notes: e.target.value })}
-        placeholder="Заметки по уроку"
-      />
+      <label className="field-label">
+        Заметки по уроку
+        <textarea value={form.notes} rows={3} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+      </label>
       <div className="actions">
         <button type="button" onClick={() => onSave(form)} disabled={isSaving}>
           {isSaving ? "Сохраняем..." : "💾 Сохранить"}
