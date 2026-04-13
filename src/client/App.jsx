@@ -33,12 +33,12 @@ function Layout({ children, userEmail, onLogout }) {
   return (
     <div className="app">
       <header>
-        <h1>📘 Сам себе трекер прогресса</h1>
+        <h1>Сам себе трекер прогресса</h1>
         <div className="header-actions">
-          <Link to="/">📚 Каталог курсов</Link>
-          <span className="user-email">👤 {userEmail}</span>
+          <Link to="/">Каталог курсов</Link>
+          <span className="user-email">{userEmail}</span>
           <button type="button" onClick={onLogout}>
-            🚪 Выйти
+            Выйти
           </button>
         </div>
       </header>
@@ -70,7 +70,7 @@ function AuthPage({ onAuth }) {
   return (
     <div className="auth-wrap">
       <section className="panel auth-panel">
-        <h2>{mode === "login" ? "🔐 Вход" : "✨ Регистрация"}</h2>
+        <h2>{mode === "login" ? "Вход" : "Регистрация"}</h2>
         <form onSubmit={onSubmit} className="auth-form">
           <label className="field-label">
             Email
@@ -129,7 +129,7 @@ function CatalogPage({ token, user, onLogout }) {
   return (
     <Layout userEmail={user.email} onLogout={onLogout}>
       <section className="panel">
-        <h2>➕ Новый курс</h2>
+        <h2>Новый курс</h2>
         <form onSubmit={onSubmit} className="form-grid">
           <label className="field-label span-two">
             Название курса
@@ -144,7 +144,7 @@ function CatalogPage({ token, user, onLogout }) {
       </section>
 
       <section className="panel">
-        <h2>🗂️ Каталог</h2>
+        <h2>Каталог</h2>
         {!catalog.length && <p>Пока пусто. Добавьте первый курс.</p>}
         {catalog.map((course) => (
           <article key={course.id} className="card">
@@ -154,9 +154,9 @@ function CatalogPage({ token, user, onLogout }) {
               <small>Модулей: {course.modules.length}</small>
             </div>
             <div className="actions">
-              <Link to={`/courses/${course.id}`}>📖 Открыть</Link>
+              <Link to={`/courses/${course.id}`}>Открыть</Link>
               <button type="button" onClick={() => removeCourse(course.id)}>
-                🗑️ Удалить
+                Удалить
               </button>
             </div>
           </article>
@@ -242,7 +242,7 @@ function CoursePage({ token, user, onLogout }) {
         <section className="panel">
           <p>Курс не найден.</p>
           <button type="button" onClick={() => navigate("/")}>
-            ← Назад
+            Назад
           </button>
         </section>
       </Layout>
@@ -274,7 +274,7 @@ function CoursePage({ token, user, onLogout }) {
           <div className="module-head">
             <h3>{module.title}</h3>
             <button type="button" onClick={() => removeModule(module.id)}>
-              🗑️ Удалить модуль
+              Удалить модуль
             </button>
           </div>
 
@@ -294,7 +294,7 @@ function CoursePage({ token, user, onLogout }) {
               />
             </label>
             <button type="button" onClick={() => addLesson(module.id)}>
-              ➕ Добавить урок
+              Добавить урок
             </button>
           </div>
 
@@ -375,13 +375,13 @@ function LessonCard({ lesson, onSave, onDelete, isSaving }) {
       <div className="actions">
         {!isEditing && (
           <button type="button" onClick={() => setIsEditing(true)}>
-            ✏️ Редактировать
+            Редактировать
           </button>
         )}
         {isEditing && (
           <>
             <button type="button" onClick={saveChanges} disabled={isSaving}>
-              {isSaving ? "Сохраняем..." : "💾 Сохранить"}
+              {isSaving ? "Сохранение…" : "Сохранить"}
             </button>
             <button type="button" onClick={cancelChanges}>
               Отмена
@@ -389,7 +389,7 @@ function LessonCard({ lesson, onSave, onDelete, isSaving }) {
           </>
         )}
         <button type="button" onClick={() => onDelete(lesson.id)}>
-          🗑️ Удалить урок
+          Удалить урок
         </button>
       </div>
     </article>
@@ -443,7 +443,7 @@ function NotesEditor({ title, notes, onSave, isSaving, localOnly = false }) {
       <div className="notes-input-row">
         <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Новая заметка" />
         <button type="button" onClick={addNote} disabled={isSaving}>
-          ➕ Добавить
+          Добавить
         </button>
       </div>
       <NotesList notes={draft} emptyText="Пока нет заметок." />
@@ -475,9 +475,7 @@ export default function App() {
   const onLogout = async () => {
     try {
       await api("/api/auth/logout", { method: "POST" }, token);
-    } catch (err) {
-      // Ignore network or auth errors on local logout.
-    }
+    } catch {}
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setToken("");
