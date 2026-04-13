@@ -1,0 +1,69 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  color: #1f2a36;
+}
+
+.app {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #dce3ea;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.card,
+.lesson-card {
+  border: 1px solid #dce3ea;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 10px;
+  background: #fbfcfe;
+}
+
+.form-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr auto;
+}
+
+input,
+textarea,
+button {
+  font: inherit;
+  padding: 8px;
+}
+
+button {
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.module-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
