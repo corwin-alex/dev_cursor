@@ -3,7 +3,9 @@ const path = require("path");
 const sqlite3 = require("sqlite3").verbose();
 
 const databasePath = process.env.DATABASE_PATH || path.join(__dirname, "../../data/learning-tracker.db");
-fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+if (databasePath !== ":memory:") {
+  fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+}
 
 const db = new sqlite3.Database(databasePath);
 
